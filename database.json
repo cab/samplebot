@@ -1,0 +1,8 @@
+{
+  "dev": {
+    "native": true
+  },
+  "prod": {
+    "native": true
+  }
+}

@@ -7,6 +7,7 @@ let ffmpeg = require('fluent-ffmpeg')
 let sanitizeFilename = require('sanitize-filename')
 let Discord = require('discord.js')
 let parseArgs = require('minimist')
+let pg = require('pg-promise')
 
 let SAMPLE_PATH = '/samples'
 let CHALLENGES_PATH = '/challenges'
@@ -46,7 +47,61 @@ async function uploadSample(source, format, dropbox) {
   return link
 }
 
-function setupDiscord(dropbox) {
+async function getCurrentChallenge(db) {
+  let actives = await db.any('select * from challenges where active = $1', [
+    true,
+  ])
+  if (actives.length > 0) {
+    return actives[0]
+  }
+}
+
+async function getChallenge(db, id) {
+  return db.one('select * from challenges where id = $1', [id])
+}
+
+async function existingChallenge(db) {
+  let currentChallenge = await getCurrentChallenge(db)
+  return !!currentChallenge
+}
+
+async function endChallenge(db, id) {
+  return db.none('update challenges set active = $1 WHERE id = $2', [false, id])
+}
+
+async function getSubmissions(db, challengeId) {
+  return db.any('select * from submissions where challenge_id = $1', [
+    challengeId,
+  ])
+}
+
+async function createChallenge(db, ownerId, sampleUrl) {
+  if (!!(await existingChallenge(db))) {
+    return false
+  }
+
+  await db.none(
+    'insert into challenges(owner_id, sample_url, active) VALUES(${ownerId}, ${sampleUrl}, ${active})',
+    {
+      active: true,
+      ownerId,
+      sampleUrl,
+    },
+  )
+}
+
+async function createSubmission(db, challengeId, ownerId, trackUrl) {
+  await db.none(
+    'insert into submissions(owner_id, challenge_id, track_url) VALUES(${ownerId}, ${challengeId}, ${trackUrl}) on conflict (challenge_id, owner_id) do update set track_url = excluded.track_url',
+    {
+      ownerId,
+      challengeId,
+      trackUrl,
+    },
+  )
+}
+
+function setupDiscord(dropbox, db) {
   let client = new Discord.Client()
   client.commands = new Discord.Collection()
 
@@ -60,6 +115,63 @@ function setupDiscord(dropbox) {
     },
   })
 
+  client.commands.set('challenge', {
+    execute: async (message, args) => {
+      let currentChallenge = await getCurrentChallenge(db)
+      if (!!currentChallenge) {
+        let owner = `<@${currentChallenge.owner_id}>`
+        return message.reply(
+          `${owner} is running a challenge. sample: ${currentChallenge.sample_url}`,
+        )
+      } else {
+        return message.reply(
+          'no current challenge. start one with `challenge.start <sample>`',
+        )
+      }
+    },
+  })
+
+  client.commands.set('challenge.submissions', {
+    execute: async (message, args) => {
+      let currentChallenge = await getCurrentChallenge(db)
+      if (!!currentChallenge) {
+        let submissions = await getSubmissions(db, currentChallenge.id)
+        if (submissions.length === 0) {
+          return message.reply('no submissions yet')
+        }
+        return message.reply(
+          submissions.map((s) => `<@${s.owner_id}>: ${s.track_url}`).join('\n'),
+        )
+      } else {
+        return message.reply(
+          'no current challenge. start one by with `challenge.start <sample>`',
+        )
+      }
+    },
+  })
+
+  client.commands.set('challenge.submit', {
+    execute: async (message, args) => {
+      let currentChallenge = await getCurrentChallenge(db)
+      if (!currentChallenge) {
+        return message.reply(
+          'no current challenge. start one by with `challenge.start <sample>`',
+        )
+      }
+
+      if (args._.length === 0) {
+        return message.react('❓')
+      }
+
+      let ownerId = message.author.id
+      let trackUrl = args._[0]
+      let challengeId = currentChallenge.id
+
+      await createSubmission(db, challengeId, ownerId, trackUrl)
+      await message.react('👍')
+    },
+  })
+
   client.commands.set('challenges', {
     execute: async (message, args) => {
       let link = await dropbox.sharingCreateSharedLink({
@@ -67,6 +179,56 @@ function setupDiscord(dropbox) {
         short_url: true,
       })
       message.reply(link.url)
+    },
+  })
+
+  client.commands.set('challenge.end', {
+    execute: async (message, args) => {
+      let currentChallenge = await getCurrentChallenge(db)
+      if (!currentChallenge) {
+        return message.reply('no current challenge')
+      }
+
+      let ownerId = currentChallenge.owner_id
+
+      if (ownerId !== message.author.id) {
+        let owner = `<@${currentChallenge.owner_id}>`
+        return message.reply(`only ${owner} can end the challenge`)
+      }
+
+      await endChallenge(db, currentChallenge.id)
+      let submissions = (await getSubmissions(db, currentChallenge.id))
+        .map((s) => `<@${s.owner_id}>: ${s.track_url}`)
+        .join('\n')
+      return message.reply(`challenge ended. submissions:\n${submissions}`)
+    },
+  })
+
+  client.commands.set('challenge.start', {
+    execute: async (message, args) => {
+      let currentChallenge = await getCurrentChallenge(db)
+      if (!!currentChallenge) {
+        let owner = `<@${currentChallenge.owner_id}>`
+        return message.reply(
+          `${owner} is already running a challenge. find out more with \`challenge\``,
+        )
+      }
+      if (args._.length === 0) {
+        return message.react('❓')
+      }
+      let url = args._[0]
+      if (
+        url.startsWith('https://youtube.com/') ||
+        url.startsWith('https://www.youtube.com/')
+      ) {
+        await message.react('👍')
+        let link = await uploadSample(youtubeSampleSource(url), 'wav', dropbox)
+
+        await createChallenge(db, message.author.id, link.url)
+        await message.reply(`challenge started! sample: ${link.url}`)
+      } else {
+        return message.react('❓')
+      }
     },
   })
 
@@ -139,13 +301,22 @@ function setupDiscord(dropbox) {
   return client
 }
 
-function run() {
+async function run() {
+  let db = pg({
+    pgNative: true,
+  })({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false,
+    },
+  })
+  await db.connect()
   let dropbox = new Dropbox({
     accessToken: process.env.DROPBOX_ACCESS_TOKEN,
     fetch: require('node-fetch'),
   })
 
-  setupDiscord(dropbox)
+  setupDiscord(dropbox, db)
 }
 
-run()
+run().catch((e) => console.error(e))
