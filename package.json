@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start:bot": "node src/bot.js",
+    "start:bot": "DATABASE_URL=$(heroku config:get DATABASE_URL) node src/bot.js",
+    "deploy": "git push heroku master",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -17,10 +18,16 @@
     "fluent-ffmpeg": "^2.1.2",
     "minimist": "^1.2.5",
     "node-fetch": "^2.6.0",
+    "pg": "^8.2.1",
+    "pg-hstore": "^2.3.3",
+    "pg-native": "^3.0.0",
+    "pg-promise": "^10.5.7",
     "sanitize-filename": "^1.6.3",
     "ytdl-core": "^2.1.7"
   },
   "devDependencies": {
+    "db-migrate": "^0.11.11",
+    "db-migrate-pg": "^1.2.2",
     "prettier": "^2.0.5"
   }
 }
