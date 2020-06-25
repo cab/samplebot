@@ -272,7 +272,13 @@ function setupDiscord(dropbox, db) {
 
   client.on('message', (message) => {
     ;(async () => {
-      console.log('recv msg')
+      console.log(
+        'recv msg',
+        'bot?',
+        message.author.bot,
+        'mentioned?',
+        message.mentions.has(client.user),
+      )
       if (message.author.bot) return
       if (!message.mentions.has(client.user)) return
       let argv = message.content.split(/ +/).slice(1)
