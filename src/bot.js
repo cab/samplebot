@@ -99,6 +99,7 @@ async function createSubmission(db, challengeId, ownerId, trackUrl) {
 }
 
 function setupDiscord(dropbox, db) {
+  console.log('setting up discord')
   let client = new Discord.Client()
   client.commands = new Discord.Collection()
 
@@ -265,12 +266,13 @@ function setupDiscord(dropbox, db) {
     },
   })
 
-  let prefix = '!'
-
-  client.once('ready', () => {})
+  client.once('ready', () => {
+    console.log('discord client ready')
+  })
 
   client.on('message', (message) => {
     ;(async () => {
+      console.log('recv msg')
       if (message.author.bot) return
       if (!message.mentions.has(client.user)) return
       let argv = message.content.split(/ +/).slice(1)
@@ -299,15 +301,17 @@ function setupDiscord(dropbox, db) {
 }
 
 async function run() {
+  console.log('starting')
   let db = await sqlite.open({
     filename: './db.sqlite3',
     driver: sqlite3.Database,
   })
+  console.log('db ready')
   let dropbox = new Dropbox({
     accessToken: process.env.DROPBOX_ACCESS_TOKEN,
     fetch: require('node-fetch'),
   })
-
+  console.log('dropbox ready')
   setupDiscord(dropbox, db)
 }
 
