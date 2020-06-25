@@ -277,6 +277,7 @@ function setupDiscord(dropbox, db) {
       if (!message.mentions.has(client.user)) return
       let argv = message.content.split(/ +/).slice(1)
       let args = parseArgs(argv)
+      console.log('args', args)
       if (args._.length === 0) return
 
       for (let i = args._.length; i >= 0; i--) {
