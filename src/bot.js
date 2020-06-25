@@ -7,7 +7,8 @@ let ffmpeg = require('fluent-ffmpeg')
 let sanitizeFilename = require('sanitize-filename')
 let Discord = require('discord.js')
 let parseArgs = require('minimist')
-let pg = require('pg-promise')
+let sqlite3 = require('sqlite3')
+let sqlite = require('sqlite')
 
 let SAMPLE_PATH = '/samples'
 let CHALLENGES_PATH = '/challenges'
@@ -48,16 +49,14 @@ async function uploadSample(source, format, dropbox) {
 }
 
 async function getCurrentChallenge(db) {
-  let actives = await db.any('select * from challenges where active = $1', [
-    true,
-  ])
+  let actives = await db.all('select * from challenges where active = ?', true)
   if (actives.length > 0) {
     return actives[0]
   }
 }
 
 async function getChallenge(db, id) {
-  return db.one('select * from challenges where id = $1', [id])
+  return db.one('select * from challenges where id = ?', id)
 }
 
 async function existingChallenge(db) {
@@ -66,13 +65,11 @@ async function existingChallenge(db) {
 }
 
 async function endChallenge(db, id) {
-  return db.none('update challenges set active = $1 WHERE id = $2', [false, id])
+  return db.run('update challenges set active = ? WHERE id = ?', false, id)
 }
 
 async function getSubmissions(db, challengeId) {
-  return db.any('select * from submissions where challenge_id = $1', [
-    challengeId,
-  ])
+  return db.all('select * from submissions where challenge_id = ?', challengeId)
 }
 
 async function createChallenge(db, ownerId, sampleUrl) {
@@ -80,23 +77,23 @@ async function createChallenge(db, ownerId, sampleUrl) {
     return false
   }
 
-  await db.none(
-    'insert into challenges(owner_id, sample_url, active) VALUES(${ownerId}, ${sampleUrl}, ${active})',
+  await db.run(
+    'insert into challenges(owner_id, sample_url, active) VALUES(:ownerId, :sampleUrl, :active)',
     {
-      active: true,
-      ownerId,
-      sampleUrl,
+      ':active': true,
+      ':ownerId': ownerId,
+      ':sampleUrl': sampleUrl,
     },
   )
 }
 
 async function createSubmission(db, challengeId, ownerId, trackUrl) {
-  await db.none(
-    'insert into submissions(owner_id, challenge_id, track_url) VALUES(${ownerId}, ${challengeId}, ${trackUrl}) on conflict (challenge_id, owner_id) do update set track_url = excluded.track_url',
+  await db.run(
+    'insert into submissions(owner_id, challenge_id, track_url) VALUES(:ownerId, :challengeId, :trackUrl) on conflict (challenge_id, owner_id) do update set track_url = excluded.track_url',
     {
-      ownerId,
-      challengeId,
-      trackUrl,
+      ':ownerId': ownerId,
+      ':challengeId': challengeId,
+      ':trackUrl': trackUrl,
     },
   )
 }
@@ -302,15 +299,10 @@ function setupDiscord(dropbox, db) {
 }
 
 async function run() {
-  let db = pg({
-    pgNative: true,
-  })({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false,
-    },
+  let db = await sqlite.open({
+    filename: './db.sqlite3',
+    driver: sqlite3.Database,
   })
-  await db.connect()
   let dropbox = new Dropbox({
     accessToken: process.env.DROPBOX_ACCESS_TOKEN,
     fetch: require('node-fetch'),

@@ -1,8 +1,10 @@
 {
   "dev": {
-    "native": true
+    "driver": "sqlite3",
+    "filename": "db.sqlite3"
   },
   "prod": {
-    "native": true
+    "driver": "sqlite3",
+    "filename": "db.sqlite3"
   }
 }
