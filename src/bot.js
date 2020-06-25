@@ -107,7 +107,7 @@ function setupDiscord(dropbox, db) {
     execute: async (message, args) => {
       let available = client.commands
         .keyArray()
-        .map((k) => `\`!${k}\``)
+        .map((k) => `\`${k}\``)
         .join(', ')
       await message.reply(`available commands: ${available}`)
     },
