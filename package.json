@@ -21,6 +21,7 @@
     "sanitize-filename": "^1.6.3",
     "sqlite": "^4.0.11",
     "sqlite3": "^4.2.0",
+    "tempfile": "^3.0.0",
     "ytdl-core": "^2.1.7"
   },
   "devDependencies": {

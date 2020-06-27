@@ -9,6 +9,7 @@ let Discord = require('discord.js')
 let parseArgs = require('minimist')
 let sqlite3 = require('sqlite3')
 let sqlite = require('sqlite')
+let tempfile = require('tempfile')
 
 let SAMPLE_PATH = '/samples'
 let CHALLENGES_PATH = '/challenges'
@@ -16,7 +17,8 @@ let CHALLENGES_PATH = '/challenges'
 function youtubeSampleSource(url) {
   return async (format) => {
     let info = await ytdl.getInfo(url)
-    return new Promise((resolve, reject) => {
+    let filepath = tempfile(`.${format}`)
+    await new Promise((resolve, reject) =>
       ffmpeg(
         ytdl(url, {
           filter: (format) =>
@@ -24,12 +26,19 @@ function youtubeSampleSource(url) {
             format.qualityLabel == null /* audio only */,
         }),
       )
-        .noVideo()
-        .audioCodec('pcm_f32le')
         .format(format)
         .on('error', (e) => reject(e))
-        .pipe(concatStream((data) => resolve({ title: info.title, data })))
-    })
+        .on('start', function (commandLine) {
+          console.log('Spawned Ffmpeg with command: ' + commandLine)
+        })
+        .on('stderr', function (stderrLine) {
+          console.log('Stderr output: ' + stderrLine)
+        })
+        .on('end', () => resolve())
+        .save(filepath),
+    )
+    let data = await fs.promises.readFile(filepath)
+    return { data, title: info.title }
   }
 }
 
