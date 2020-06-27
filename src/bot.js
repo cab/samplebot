@@ -3,7 +3,6 @@ let fs = require('fs')
 let { Dropbox } = require('dropbox')
 let path = require('path')
 let ytdl = require('ytdl-core')
-let concatStream = require('concat-stream')
 let ffmpeg = require('fluent-ffmpeg')
 let sanitizeFilename = require('sanitize-filename')
 let Discord = require('discord.js')
@@ -29,12 +28,6 @@ function youtubeSampleSource(url) {
       )
         .format(format)
         .on('error', (e) => reject(e))
-        .on('start', function (commandLine) {
-          console.log('Spawned Ffmpeg with command: ' + commandLine)
-        })
-        .on('stderr', function (stderrLine) {
-          console.log('Stderr output: ' + stderrLine)
-        })
         .on('end', () => resolve())
         .save(filepath),
     )
@@ -67,10 +60,6 @@ async function getCurrentChallenge(db) {
   }
 }
 
-async function getChallenge(db, id) {
-  return db.one('select * from challenges where id = ?', id)
-}
-
 async function existingChallenge(db) {
   let currentChallenge = await getCurrentChallenge(db)
   return !!currentChallenge
@@ -85,7 +74,7 @@ async function getSubmissions(db, challengeId) {
 }
 
 async function createChallenge(db, ownerId, sampleUrl) {
-  if (!!(await existingChallenge(db))) {
+  if (await existingChallenge(db)) {
     return false
   }
 
@@ -116,7 +105,7 @@ function setupDiscord(dropbox, db) {
   let prefix = 'sb!'
 
   client.commands.set('help', {
-    execute: async (message, args) => {
+    execute: async (message) => {
       let available = client.commands
         .keyArray()
         .map((k) => `\`${prefix}${k}\``)
@@ -126,9 +115,9 @@ function setupDiscord(dropbox, db) {
   })
 
   client.commands.set('challenge', {
-    execute: async (message, args) => {
+    execute: async (message) => {
       let currentChallenge = await getCurrentChallenge(db)
-      if (!!currentChallenge) {
+      if (currentChallenge) {
         let owner = `<@${currentChallenge.owner_id}>`
         return message.reply(
           `${owner} is running a challenge. sample: ${currentChallenge.sample_url}`,
@@ -142,9 +131,9 @@ function setupDiscord(dropbox, db) {
   })
 
   client.commands.set('challenge.submissions', {
-    execute: async (message, args) => {
+    execute: async (message) => {
       let currentChallenge = await getCurrentChallenge(db)
-      if (!!currentChallenge) {
+      if (currentChallenge) {
         let submissions = await getSubmissions(db, currentChallenge.id)
         if (submissions.length === 0) {
           return message.reply('no submissions yet')
@@ -183,7 +172,7 @@ function setupDiscord(dropbox, db) {
   })
 
   client.commands.set('challenges', {
-    execute: async (message, args) => {
+    execute: async (message) => {
       let link = await dropbox.sharingCreateSharedLink({
         path: CHALLENGES_PATH,
         short_url: true,
@@ -193,7 +182,7 @@ function setupDiscord(dropbox, db) {
   })
 
   client.commands.set('challenge.end', {
-    execute: async (message, args) => {
+    execute: async (message) => {
       let currentChallenge = await getCurrentChallenge(db)
       if (!currentChallenge) {
         return message.reply('no current challenge')
@@ -217,7 +206,7 @@ function setupDiscord(dropbox, db) {
   client.commands.set('challenge.start', {
     execute: async (message, args) => {
       let currentChallenge = await getCurrentChallenge(db)
-      if (!!currentChallenge) {
+      if (currentChallenge) {
         let owner = `<@${currentChallenge.owner_id}>`
         return message.reply(
           `${owner} is already running a challenge. find out more with \`challenge\``,
@@ -243,7 +232,7 @@ function setupDiscord(dropbox, db) {
   })
 
   client.commands.set('samples', {
-    execute: async (message, args) => {
+    execute: async (message) => {
       let link = await dropbox.sharingCreateSharedLink({
         path: SAMPLE_PATH,
         short_url: true,
@@ -280,8 +269,8 @@ function setupDiscord(dropbox, db) {
 
   client.once('ready', () => {})
 
-  client.on('message', (message) => {
-    ;(async () => {
+  client.on('message', (message) =>
+    (async () => {
       if (message.author.bot) return
       let argv = message.content.split(/ +/)
       if (!argv[0].startsWith(prefix)) return
@@ -302,8 +291,8 @@ function setupDiscord(dropbox, db) {
           break
         }
       }
-    })()
-  })
+    })(),
+  )
 
   client.login(process.env.DISCORD_BOT_TOKEN)
 
