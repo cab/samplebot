@@ -24,9 +24,9 @@ function youtubeSampleSource(url) {
             format.qualityLabel == null /* audio only */,
         }),
       )
-        .format(format)
         .noVideo()
-        .audioCodec('pcm_s16le')
+        .audioCodec('pcm_f32le')
+        .format(format)
         .on('error', (e) => reject(e))
         .pipe(concatStream((data) => resolve({ title: info.title, data })))
     })
