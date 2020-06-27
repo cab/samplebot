@@ -25,7 +25,7 @@ function youtubeSampleSource(url) {
         }),
       )
         .format(format)
-        .outputOptions('-bitexact')
+        .noVideo()
         .on('error', (e) => reject(e))
         .pipe(concatStream((data) => resolve({ title: info.title, data })))
     })
