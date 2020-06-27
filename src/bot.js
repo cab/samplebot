@@ -101,12 +101,13 @@ async function createSubmission(db, challengeId, ownerId, trackUrl) {
 function setupDiscord(dropbox, db) {
   let client = new Discord.Client()
   client.commands = new Discord.Collection()
+  let prefix = 'sb!'
 
   client.commands.set('help', {
     execute: async (message, args) => {
       let available = client.commands
         .keyArray()
-        .map((k) => `\`!${k}\``)
+        .map((k) => `\`${prefix}${k}\``)
         .join(', ')
       await message.reply(`available commands: ${available}`)
     },
@@ -265,16 +266,14 @@ function setupDiscord(dropbox, db) {
     },
   })
 
-  let prefix = '!'
-
   client.once('ready', () => {})
 
   client.on('message', (message) => {
     ;(async () => {
       if (message.author.bot) return
-      if (!message.mentions.has(client.user)) return
-      let argv = message.content.split(/ +/).slice(1)
-      let args = parseArgs(argv)
+      let argv = message.content.split(/ +/)
+      if (argv[0] !== prefix) return
+      let args = parseArgs(argv.slice(1))
       if (args._.length === 0) return
 
       for (let i = args._.length; i >= 0; i--) {
