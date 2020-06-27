@@ -1,4 +1,5 @@
 require('dotenv').config()
+let fs = require('fs')
 let { Dropbox } = require('dropbox')
 let path = require('path')
 let ytdl = require('ytdl-core')
