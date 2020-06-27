@@ -26,6 +26,7 @@ function youtubeSampleSource(url) {
       )
         .format(format)
         .noVideo()
+        .audioCodec('copy')
         .on('error', (e) => reject(e))
         .pipe(concatStream((data) => resolve({ title: info.title, data })))
     })
