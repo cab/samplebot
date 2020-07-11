@@ -1,5 +1,6 @@
 require('dotenv').config()
 let fs = require('fs')
+let urlParse = require('url')
 let { Dropbox } = require('dropbox')
 let path = require('path')
 let ytdl = require('ytdl-core')
@@ -248,16 +249,16 @@ function setupDiscord(dropbox, db) {
       }
       let url = args._[0]
       let allowedFormats = ['mp3', 'wav']
+      let allowedHosts = ['youtube.com', 'youtu.be']
       let defaultFormat = 'wav'
       let format = args.format || defaultFormat
       if (!allowedFormats.includes(format)) {
         await message.reply(`invalid format, sorry`)
         return
       }
-      if (
-        url.startsWith('https://youtube.com/') ||
-        url.startsWith('https://www.youtube.com/')
-      ) {
+      
+      let { hostname } = urlParse.parse(url)
+      if (allowedHosts.some(host => hostname.includes(host))) {
         await message.react('👍')
         let link = await uploadSample(youtubeSampleSource(url), format, dropbox)
         await message.reply(`done. ${link.url}`)
