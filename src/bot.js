@@ -42,7 +42,7 @@ async function addYoutubeSample(url, args, message, dropbox) {
     let allowedFormats = ['mp3', 'wav']
     let allowedHosts = ['youtube.com', 'youtu.be']
     let defaultFormat = 'wav'
-    let { format } = args || defaultFormat;
+    let format = args.format || defaultFormat
 
     if (!allowedFormats.includes(format)) {
       await message.reply(`invalid format, sorry`)
@@ -52,7 +52,11 @@ async function addYoutubeSample(url, args, message, dropbox) {
     let { hostname } = urlParse.parse(url)
     if (allowedHosts.includes(hostname)) {
       await message.react('👍')
-      let link = await uploadSample(youtubeSampleSource(url), defaultFormat, dropbox)
+      let link = await uploadSample(
+        youtubeSampleSource(url),
+        defaultFormat,
+        dropbox,
+      )
       resolve(link)
     } else {
       return reject(`url "${url}" is not supported`)
@@ -236,7 +240,7 @@ function setupDiscord(dropbox, db) {
           `${owner} is already running a challenge. find out more with \`challenge\``,
         )
       }
-      
+
       if (args._.length === 0) {
         return message.react('❓')
       }
@@ -247,7 +251,7 @@ function setupDiscord(dropbox, db) {
 
         await createChallenge(db, message.author.id, link.url)
         await message.reply(`challenge started! sample: ${link.url}`)
-      } catch(err) {
+      } catch (err) {
         console.error(`Failed to start a challenge: ${err}`)
         return message.react('❓')
       }
@@ -276,24 +280,6 @@ function setupDiscord(dropbox, db) {
         await message.reply(`done. ${link.url}`)
       } catch (err) {
         console.error(`Failed to add a sample: ${err}`)
-        return message.react('❓')
-      }
-
-      let allowedFormats = ['mp3', 'wav']
-      let allowedHosts = ['youtube.com', 'youtu.be']
-      let defaultFormat = 'wav'
-      let format = args.format || defaultFormat
-      if (!allowedFormats.includes(format)) {
-        await message.reply(`invalid format, sorry`)
-        return
-      }
-      
-      let { hostname } = urlParse.parse(url)
-      if (allowedHosts.some(host => hostname.includes(host))) {
-        await message.react('👍')
-        let link = await uploadSample(youtubeSampleSource(url), format, dropbox)
-        await message.reply(`done. ${link.url}`)
-      } else {
         return message.react('❓')
       }
     },
