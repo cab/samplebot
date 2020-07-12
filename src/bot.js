@@ -38,30 +38,28 @@ function youtubeSampleSource(url) {
 }
 
 async function addYoutubeSample(url, args, message, dropbox) {
-  return new Promise(async (resolve, reject) => {
-    let allowedFormats = ['mp3', 'wav']
-    let allowedHosts = ['youtube.com', 'youtu.be']
-    let defaultFormat = 'wav'
-    let format = args.format || defaultFormat
+  let allowedFormats = ['mp3', 'wav']
+  let allowedHosts = ['youtube.com', 'youtu.be', 'www.youtube.com']
+  let defaultFormat = 'wav'
+  let format = args.format || defaultFormat
 
-    if (!allowedFormats.includes(format)) {
-      await message.reply(`invalid format, sorry`)
-      return
-    }
+  if (!allowedFormats.includes(format)) {
+    await message.reply(`invalid format, sorry`)
+    return
+  }
 
-    let { hostname } = urlParse.parse(url)
-    if (allowedHosts.includes(hostname)) {
-      await message.react('👍')
-      let link = await uploadSample(
-        youtubeSampleSource(url),
-        defaultFormat,
-        dropbox,
-      )
-      resolve(link)
-    } else {
-      return reject(`url "${url}" is not supported`)
-    }
-  })
+  let { hostname } = urlParse.parse(url)
+  if (allowedHosts.includes(hostname)) {
+    await message.react('👍')
+    let link = await uploadSample(
+      youtubeSampleSource(url),
+      defaultFormat,
+      dropbox,
+    )
+    return link
+  } else {
+    throw new Error(`url "${url}" is not supported`)
+  }
 }
 
 async function uploadSample(source, format, dropbox) {
@@ -247,7 +245,7 @@ function setupDiscord(dropbox, db) {
 
       let url = args._[0]
       try {
-        let link = await addYoutubeSample(url, message, args, dropbox)
+        let link = await addYoutubeSample(url, args, message, dropbox)
 
         await createChallenge(db, message.author.id, link.url)
         await message.reply(`challenge started! sample: ${link.url}`)
