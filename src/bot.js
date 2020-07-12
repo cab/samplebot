@@ -37,6 +37,29 @@ function youtubeSampleSource(url) {
   }
 }
 
+async function addYoutubeSample(url, args, message, dropbox) {
+  return new Promise(async (resolve, reject) => {
+    let allowedFormats = ['mp3', 'wav']
+    let allowedHosts = ['youtube.com', 'youtu.be']
+    let defaultFormat = 'wav'
+    let { format } = args || defaultFormat;
+
+    if (!allowedFormats.includes(format)) {
+      await message.reply(`invalid format, sorry`)
+      return
+    }
+
+    let { hostname } = urlParse.parse(url)
+    if (allowedHosts.includes(hostname)) {
+      await message.react('👍')
+      let link = await uploadSample(youtubeSampleSource(url), defaultFormat, dropbox)
+      resolve(link)
+    } else {
+      return reject(`url "${url}" is not supported`)
+    }
+  })
+}
+
 async function uploadSample(source, format, dropbox) {
   let { title, data } = await source(format)
   let uploadPath = path.join(
@@ -213,20 +236,19 @@ function setupDiscord(dropbox, db) {
           `${owner} is already running a challenge. find out more with \`challenge\``,
         )
       }
+      
       if (args._.length === 0) {
         return message.react('❓')
       }
+
       let url = args._[0]
-      if (
-        url.startsWith('https://youtube.com/') ||
-        url.startsWith('https://www.youtube.com/')
-      ) {
-        await message.react('👍')
-        let link = await uploadSample(youtubeSampleSource(url), 'wav', dropbox)
+      try {
+        let link = await addYoutubeSample(url, message, args, dropbox)
 
         await createChallenge(db, message.author.id, link.url)
         await message.reply(`challenge started! sample: ${link.url}`)
-      } else {
+      } catch(err) {
+        console.error(`Failed to start a challenge: ${err}`)
         return message.react('❓')
       }
     },
@@ -247,7 +269,16 @@ function setupDiscord(dropbox, db) {
       if (args._.length === 0) {
         return message.react('❓')
       }
+
       let url = args._[0]
+      try {
+        let link = await addYoutubeSample(url, args, message, dropbox)
+        await message.reply(`done. ${link.url}`)
+      } catch (err) {
+        console.error(`Failed to add a sample: ${err}`)
+        return message.react('❓')
+      }
+
       let allowedFormats = ['mp3', 'wav']
       let allowedHosts = ['youtube.com', 'youtu.be']
       let defaultFormat = 'wav'
