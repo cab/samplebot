@@ -6,7 +6,7 @@
   "scripts": {
     "start:bot": "node src/bot.js",
     "deploy": "git push heroku master",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "author": "",
   "license": "MIT",
@@ -25,9 +25,11 @@
     "ytdl-core": "^2.1.7"
   },
   "devDependencies": {
+    "chai": "^4.2.0",
     "db-migrate": "^0.11.11",
     "db-migrate-sqlite3": "^0.4.0",
     "eslint": "^7.3.1",
+    "mocha": "^8.1.1",
     "prettier": "^2.0.5"
   }
 }

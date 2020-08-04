@@ -39,7 +39,12 @@ function youtubeSampleSource(url) {
 
 async function addYoutubeSample(url, args, message, dropbox) {
   let allowedFormats = ['mp3', 'wav']
-  let allowedHosts = ['youtube.com', 'youtu.be', 'www.youtube.com']
+  let allowedHosts = [
+    'youtube.com',
+    'youtu.be',
+    'www.youtube.com',
+    'music.youtube.com',
+  ]
   let defaultFormat = 'wav'
   let format = args.format || defaultFormat
 
@@ -328,4 +333,11 @@ async function run() {
   setupDiscord(dropbox, db)
 }
 
-run().catch((e) => console.error(e))
+// Only run the server when we aren't running tests.
+if (process.env.NODE_ENV !== 'test') {
+  run().catch((e) => console.error(e))
+}
+
+module.exports = {
+  youtubeSampleSource,
+}
