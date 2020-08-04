@@ -6,7 +6,7 @@
   "scripts": {
     "start:bot": "node src/bot.js",
     "deploy": "git push heroku master",
-    "test": "mocha"
+    "test": "mocha src/tests"
   },
   "author": "",
   "license": "MIT",
