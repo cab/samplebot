@@ -44,7 +44,6 @@ async function addYoutubeSample(url, args, message, dropbox) {
     'youtu.be',
     'www.youtube.com',
     'music.youtube.com',
-    'www.music.youtube.com',
   ]
   let defaultFormat = 'wav'
   let format = args.format || defaultFormat
