@@ -6,7 +6,7 @@
   "scripts": {
     "start:bot": "node src/bot.js",
     "deploy": "git push heroku master",
-    "test": "mocha"
+    "test": "mocha src/tests"
   },
   "author": "",
   "license": "MIT",
@@ -22,14 +22,17 @@
     "sqlite": "^4.0.11",
     "sqlite3": "^4.2.0",
     "tempfile": "^3.0.0",
-    "ytdl-core": "^2.1.7"
+    "ytdl-core": "^3.2.0"
   },
   "devDependencies": {
+    "@sinonjs/referee": "^6.0.1",
     "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
     "db-migrate": "^0.11.11",
     "db-migrate-sqlite3": "^0.4.0",
     "eslint": "^7.3.1",
     "mocha": "^8.1.1",
-    "prettier": "^2.0.5"
+    "prettier": "^2.0.5",
+    "sinon": "^9.0.2"
   }
 }

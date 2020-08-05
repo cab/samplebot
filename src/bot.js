@@ -22,9 +22,8 @@ function youtubeSampleSource(url) {
     await new Promise((resolve, reject) =>
       ffmpeg(
         ytdl(url, {
-          filter: (format) =>
-            format.audioBitrate === 160 &&
-            format.qualityLabel == null /* audio only */,
+          filter: 'audioonly',
+          quality: 'highestaudio',
         }),
       )
         .format(format)
@@ -33,7 +32,7 @@ function youtubeSampleSource(url) {
         .save(filepath),
     )
     let data = await fs.promises.readFile(filepath)
-    return { data, title: info.title }
+    return { data, title: info.videoDetails.title }
   }
 }
 
@@ -340,4 +339,5 @@ if (process.env.NODE_ENV !== 'test') {
 
 module.exports = {
   youtubeSampleSource,
+  addYoutubeSample,
 }
