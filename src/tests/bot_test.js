@@ -1,4 +1,4 @@
-let { addYoutubeSample, youtubeSampleSource } = require('../bot')
+let { addYoutubeSample } = require('../bot')
 let { describe, it } = require('mocha')
 let { expect } = require('chai')
 let chai = require('chai')
@@ -10,10 +10,8 @@ const { assert } = require('@sinonjs/referee')
 
 chai.use(chaiAsPromised)
 
-const defaultFormat = 'mp3'
-
 describe('#addYoutubeSample', function () {
-  this.timeout(60 * 1000)
+  this.timeout(15 * 1000)
   it('should throw an error when invalid url provided', async function () {
     let dropbox = new Dropbox({
       fetch: require('node-fetch'),
