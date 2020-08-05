@@ -32,7 +32,7 @@ function youtubeSampleSource(url) {
         .save(filepath),
     )
     let data = await fs.promises.readFile(filepath)
-    return { data, title: info.title }
+    return { data, title: info.videoDetails.title }
   }
 }
 
