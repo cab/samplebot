@@ -81,6 +81,30 @@ describe('#addYoutubeSample', function () {
     })
   })
 
+  it('should work with a song with the highest quality', function () {
+    let dropbox = new Dropbox({
+      fetch: require('node-fetch'),
+    })
+    sinon.stub(dropbox, 'filesUpload').returns('')
+    sinon.stub(dropbox, 'sharingCreateSharedLink').returns('example-url')
+
+    let messageStub = sinon.createStubInstance(Message)
+
+    return addYoutubeSample(
+      'https://music.youtube.com/watch?v=rW9VsxK2HPE',
+      {
+        format: 'mp3',
+      },
+      messageStub,
+      dropbox,
+    ).then((link) => {
+      expect(link).to.equal('example-url')
+      assert.isTrue(dropbox.filesUpload.called)
+      assert.isTrue(messageStub.react.calledWith('👍'))
+      expect(dropbox)
+    })
+  })
+
   it('should work for www.youtube.com links', function () {
     let dropbox = new Dropbox({
       fetch: require('node-fetch'),
@@ -99,6 +123,7 @@ describe('#addYoutubeSample', function () {
       dropbox,
     ).then((link) => {
       expect(link).to.equal('example-url')
+      assert.isTrue(dropbox.filesUpload.called)
       assert.isTrue(messageStub.react.calledWith('👍'))
       expect(dropbox)
     })
