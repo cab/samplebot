@@ -22,9 +22,8 @@ function youtubeSampleSource(url) {
     await new Promise((resolve, reject) =>
       ffmpeg(
         ytdl(url, {
-          filter: (format) =>
-            format.audioBitrate === 160 &&
-            format.qualityLabel == null /* audio only */,
+          filter: 'audioonly',
+          quality: 'highestaudio',
         }),
       )
         .format(format)
