@@ -1,0 +1,21 @@
+[package]
+name = "samplebot"
+version = "0.1.0"
+authors = ["conner bryan <conner@amps.io>"]
+edition = "2018"
+
+[dependencies]
+rusqlite = "0.23.1"
+serenity = { version = "0.8.6", default-features=false, features=["builder", "framework", "rustls_backend"]}
+dropbox-sdk = { version = "0.4.0", default-features=false, features=["hyper_client", "dbx_files"] }
+tokio = { version = "0.2", features = ["full"] }
+futures = "0.3.5"
+tempfile = "3.1.0"
+ffmpeg-next = "4.3.4"
+reqwest = { version = "0.10.7", features = ["json"] }
+thiserror = "1.0.20"
+serde = { version = "1.0", features = ["derive"] }
+serde_urlencoded = "0.5.1"
+lazy_static = "1.4.0"
+regex = "1"
+serde_json = "1.0"
