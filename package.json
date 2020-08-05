@@ -22,7 +22,7 @@
     "sqlite": "^4.0.11",
     "sqlite3": "^4.2.0",
     "tempfile": "^3.0.0",
-    "ytdl-core": "^2.1.7"
+    "ytdl-core": "^3.2.0"
   },
   "devDependencies": {
     "@sinonjs/referee": "^6.0.1",
