@@ -1,4 +1,9 @@
+use crate::Sample;
+use serde::Deserialize;
+use std::io::{self, Write};
+use std::process::Stdio;
 use thiserror::Error as ThisError;
+use tokio::io::AsyncReadExt;
 use tokio::process::Command;
 
 #[derive(Debug)]
@@ -8,24 +13,57 @@ pub struct Source {
 
 #[derive(Debug, ThisError)]
 pub enum Error {
+  #[error(transparent)]
+  IoError(#[from] std::io::Error),
+  #[error(transparent)]
+  JsonError(#[from] serde_json::Error),
+  #[error(transparent)]
+  JoinError(#[from] tokio::task::JoinError),
   #[error("failed to spawn youtube-dl")]
-  SpawnError(#[from] std::io::Error),
+  SpawnError(std::io::Error),
+  #[error("{0}")]
+  DownloadError(String),
   #[error("invalid youtube url")]
   InvalidUrl,
 }
 
-async fn download(url: &str) -> Result<(), Error> {
-  let status = Command::new("youtube-dl")
+#[derive(Deserialize, Debug)]
+struct VideoInfo {
+  title: String,
+  artist: Option<String>,
+  album: Option<String>,
+  track: Option<String>,
+}
+
+pub async fn download(url: &str) -> Result<Sample, Error> {
+  let format = "flac";
+  let child = Command::new("youtube-dl")
+    .stdout(Stdio::piped())
     .arg(url)
-    .arg("--extract-audio")
-    .args(&["--audio-format", "best"])
+    .arg("--print-json")
+    .args(&["-f", "251"])
+    .args(&["--audio-format", format])
     .args(&["--audio-quality", "0"])
+    .args(&["--output", "-"])
     .kill_on_drop(true)
-    .spawn()
-    .map_err(|e| Error::SpawnError(e))?
-    .await?;
-  println!("the command exited with: {}", status);
-  Ok(())
+    .output()
+    .await
+    .map_err(|e| Error::SpawnError(e))?;
+
+  if !child.status.success() {
+    return Err(Error::DownloadError(
+      "youtube-dl did not exit succcessfully".to_owned(),
+    ));
+  }
+
+  let info = serde_json::from_slice::<VideoInfo>(&child.stderr)?;
+  let data = child.stdout;
+
+  Ok(Sample {
+    title: info.title,
+    format: format.into(),
+    data,
+  })
 }
 
 #[cfg(test)]

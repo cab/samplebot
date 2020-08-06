@@ -6,8 +6,9 @@ edition = "2018"
 
 [dependencies]
 rusqlite = "0.23.1"
-serenity = { version = "0.8.6", default-features=false, features=["builder", "framework", "rustls_backend"]}
-dropbox-sdk = { version = "0.4.0", default-features=false, features=["hyper_client", "dbx_files"] }
+# serenity = { version = "0.8.6", default-features=false, features=["builder", "framework", "cache", "utils", "standard_framework", "http", "rustls_backend"]}
+serenity = { git = "https://github.com/acdenisSK/serenity", branch = "await_next" }
+dropbox-sdk = { version = "0.4.0", default-features=false, features=["hyper_client", "dbx_files", "dbx_sharing"] }
 tokio = { version = "0.2", features = ["full"] }
 futures = "0.3.5"
 tempfile = "3.1.0"
@@ -19,3 +20,5 @@ serde_urlencoded = "0.5.1"
 lazy_static = "1.4.0"
 regex = "1"
 serde_json = "1.0"
+slug = "0.1.4"
+
