@@ -129,6 +129,22 @@ async function createSubmission(db, challengeId, ownerId, trackUrl) {
   )
 }
 
+async function getRandomSample(dropbox) {
+  try {
+    const entries = await dropbox.filesListFolder({ path: SAMPLE_PATH })
+    const sample = entries[Math.floor(Math.random() * entries.length)]
+    const link = await dropbox.sharingCreateSharedLinkWithSettings({
+      path: sample.path_lower,
+      short_url: true,
+    })
+
+    return link
+  } catch (err) {
+    console.error(`Failed to list files at '${SAMPLE_PATH}'`, err)
+    throw err
+  }
+}
+
 function setupDiscord(dropbox, db) {
   let client = new Discord.Client()
   client.commands = new Discord.Collection()
@@ -282,6 +298,18 @@ function setupDiscord(dropbox, db) {
         await message.reply(`done. ${link.url}`)
       } catch (err) {
         console.error(`Failed to add a sample: ${err}`)
+        return message.react('❓')
+      }
+    },
+  })
+
+  client.commands.set('samples.random', {
+    execute: async (message, _) => {
+      try {
+        await message.react('👍')
+        const { url } = await getRandomSample(dropbox)
+        await message.reply(`done. ${url}`)
+      } catch (err) {
         return message.react('❓')
       }
     },
