@@ -304,7 +304,7 @@ function setupDiscord(dropbox, db) {
   })
 
   client.commands.set('samples.random', {
-    execute: async (message, _) => {
+    execute: async (message) => {
       try {
         await message.react('👍')
         const { url } = await getRandomSample(dropbox)
