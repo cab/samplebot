@@ -8,6 +8,11 @@
     "deploy": "git push heroku master",
     "test": "mocha src/tests"
   },
+  "husky": {
+    "hooks": {
+      "pre-push": "npm test"
+    }
+  },
   "author": "",
   "license": "MIT",
   "dependencies": {
@@ -31,6 +36,7 @@
     "db-migrate": "^0.11.11",
     "db-migrate-sqlite3": "^0.4.0",
     "eslint": "^7.3.1",
+    "husky": "^4.3.0",
     "mocha": "^8.1.1",
     "prettier": "^2.0.5",
     "sinon": "^9.0.2"
