@@ -152,7 +152,7 @@ async function getRandomSample(dropbox) {
   try {
     let entries = await listDropboxFiles(dropbox, SAMPLE_PATH)
     let sample = entries[Math.floor(Math.random() * entries.length)]
-    let link = await dropbox.sharingCreateSharedLinkWithSettings({
+    let link = await dropbox.sharingCreateSharedLink({
       path: sample.path_lower,
       short_url: true,
     })
