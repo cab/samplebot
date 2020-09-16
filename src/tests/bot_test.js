@@ -163,7 +163,6 @@ describe('#getRandomSample', () => {
 
     return getRandomSample(dropbox).then((link) => {
       expect(link).to.eq('example-url')
-      assert.isTrue(messageStub.react.calledWith('👍'))
     })
   })
 })
