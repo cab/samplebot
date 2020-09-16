@@ -159,8 +159,6 @@ describe('#getRandomSample', () => {
       .stub(dropbox, 'sharingCreateSharedLinkWithSettings')
       .returns('example-url')
 
-    const messageStub = sinon.createStubInstance(Message)
-
     return getRandomSample(dropbox).then((link) => {
       expect(link).to.eq('example-url')
     })
