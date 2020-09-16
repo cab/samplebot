@@ -133,13 +133,16 @@ function listDropboxFiles(dropbox, path) {
   async function list(build, cursor) {
     let response
     if (cursor) {
-      response = await dropbox.filesListFolderContinue({ path })
+      response = await dropbox.filesListFolderContinue({ cursor })
     } else {
       response = await dropbox.filesListFolder({ path })
     }
-    let { entries, has_more: hasMore, cursor } = response
+    let { entries, has_more: hasMore, cursor: newCursor } = response
+    let allEntries = build.concat(entries)
     if (hasMore) {
-      return list(build.concat(entries), cursor)
+      return list(allEntries, newCursor)
+    } else {
+      return allEntries
     }
   }
   return list([])
