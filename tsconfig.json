@@ -1,0 +1,20 @@
+{
+  "files": [
+    "./src/index.d.ts"
+  ],
+  "compilerOptions": {
+    "target": "es2017",
+    "lib": ["esnext"],
+    "strict": true,
+    "moduleResolution": "node",
+    "module": "commonjs",
+    "sourceMap": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "experimentalDecorators": false,
+    "esModuleInterop": true,
+    "typeRoots": ["node_modules/@types", "./src/*", "../"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
+}
