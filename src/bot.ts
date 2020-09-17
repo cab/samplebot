@@ -1,22 +1,25 @@
 require('dotenv').config()
-let fs = require('fs')
-let urlParse = require('url')
-let { Dropbox } = require('dropbox')
-let path = require('path')
-let ytdl = require('ytdl-core')
-let ffmpeg = require('fluent-ffmpeg')
-let sanitizeFilename = require('sanitize-filename')
-let Discord = require('discord.js')
-let parseArgs = require('minimist')
-let sqlite3 = require('sqlite3')
-let sqlite = require('sqlite')
-let tempfile = require('tempfile')
+import * as fs from 'fs'
+import { parse as parseUrl } from 'url'
+import { Dropbox, files as dropboxFiles } from 'dropbox'
+import * as path from 'path'
+import ytdl from 'ytdl-core'
+import ffmpeg from 'fluent-ffmpeg'
+import sanitizeFilename from 'sanitize-filename'
+import * as Discord from 'discord.js'
+import parseArgs, { ParsedArgs } from 'minimist'
+import sqlite3 from 'sqlite3'
+import sqlite, { Database } from 'sqlite'
+import tempfile from 'tempfile'
+import { stringify } from 'querystring'
 
 let SAMPLE_PATH = '/samples'
 let CHALLENGES_PATH = '/challenges'
 
-function youtubeSampleSource(url) {
-  return async (format) => {
+type AudioFormat = 'wav' | 'mp3'
+
+function youtubeSampleSource(url: string) {
+  return async (format: AudioFormat) => {
     let info = await ytdl.getInfo(url)
     let filepath = tempfile(`.${format}`)
     await new Promise((resolve, reject) =>
@@ -36,7 +39,12 @@ function youtubeSampleSource(url) {
   }
 }
 
-async function addYoutubeSample(url, args, message, dropbox) {
+export async function addYoutubeSample(
+  url: string,
+  args: { format: AudioFormat },
+  message: Discord.Message,
+  dropbox: Dropbox,
+): ReturnType<typeof uploadSample> {
   let allowedFormats = ['mp3', 'wav']
   let allowedHosts = [
     'youtube.com',
@@ -44,16 +52,16 @@ async function addYoutubeSample(url, args, message, dropbox) {
     'www.youtube.com',
     'music.youtube.com',
   ]
-  let defaultFormat = 'wav'
+  let defaultFormat: AudioFormat = 'wav'
   let format = args.format || defaultFormat
 
   if (!allowedFormats.includes(format)) {
     await message.reply(`invalid format, sorry`)
-    return
+    throw new Error(`invalid format ${format}`)
   }
 
-  let { hostname } = urlParse.parse(url)
-  if (allowedHosts.includes(hostname)) {
+  let { hostname } = parseUrl(url)
+  if (hostname && allowedHosts.includes(hostname)) {
     await message.react('👍')
     let link = await uploadSample(
       youtubeSampleSource(url),
@@ -66,7 +74,13 @@ async function addYoutubeSample(url, args, message, dropbox) {
   }
 }
 
-async function uploadSample(source, format, dropbox) {
+type Source = (fmt: AudioFormat) => Promise<{ title: string; data: any }>
+
+async function uploadSample(
+  source: Source,
+  format: AudioFormat,
+  dropbox: Dropbox,
+) {
   let { title, data } = await source(format)
   let uploadPath = path.join(
     SAMPLE_PATH,
@@ -83,27 +97,31 @@ async function uploadSample(source, format, dropbox) {
   return link
 }
 
-async function getCurrentChallenge(db) {
+async function getCurrentChallenge(db: Database) {
   let actives = await db.all('select * from challenges where active = ?', true)
   if (actives.length > 0) {
     return actives[0]
   }
 }
 
-async function existingChallenge(db) {
+async function existingChallenge(db: Database) {
   let currentChallenge = await getCurrentChallenge(db)
   return !!currentChallenge
 }
 
-async function endChallenge(db, id) {
+async function endChallenge(db: Database, id: string) {
   return db.run('update challenges set active = ? WHERE id = ?', false, id)
 }
 
-async function getSubmissions(db, challengeId) {
+async function getSubmissions(db: Database, challengeId: string) {
   return db.all('select * from submissions where challenge_id = ?', challengeId)
 }
 
-async function createChallenge(db, ownerId, sampleUrl) {
+async function createChallenge(
+  db: Database,
+  ownerId: string,
+  sampleUrl: string,
+) {
   if (await existingChallenge(db)) {
     return false
   }
@@ -118,7 +136,12 @@ async function createChallenge(db, ownerId, sampleUrl) {
   )
 }
 
-async function createSubmission(db, challengeId, ownerId, trackUrl) {
+async function createSubmission(
+  db: Database,
+  challengeId: string,
+  ownerId: string,
+  trackUrl: string,
+) {
   await db.run(
     'insert into submissions(owner_id, challenge_id, track_url) VALUES(:ownerId, :challengeId, :trackUrl) on conflict (challenge_id, owner_id) do update set track_url = excluded.track_url',
     {
@@ -129,8 +152,16 @@ async function createSubmission(db, challengeId, ownerId, trackUrl) {
   )
 }
 
-function listDropboxFiles(dropbox, path) {
-  async function list(build, cursor) {
+type DropboxEntry = dropboxFiles.ListFolderResult['entries'][0]
+
+function listDropboxFiles(
+  dropbox: Dropbox,
+  path: string,
+): Promise<DropboxEntry[]> {
+  async function list(
+    build: DropboxEntry[],
+    cursor: string | undefined,
+  ): Promise<DropboxEntry[]> {
     let response
     if (cursor) {
       response = await dropbox.filesListFolderContinue({ cursor })
@@ -145,15 +176,15 @@ function listDropboxFiles(dropbox, path) {
       return allEntries
     }
   }
-  return list([])
+  return list([], undefined)
 }
 
-async function getRandomSample(dropbox) {
+export async function getRandomSample(dropbox: Dropbox) {
   try {
     let entries = await listDropboxFiles(dropbox, SAMPLE_PATH)
     let sample = entries[Math.floor(Math.random() * entries.length)]
     let link = await dropbox.sharingCreateSharedLink({
-      path: sample.path_lower,
+      path: sample.path_lower!,
       short_url: true,
     })
 
@@ -164,14 +195,18 @@ async function getRandomSample(dropbox) {
   }
 }
 
-function setupDiscord(dropbox, db) {
+interface CommandDef {
+  execute: (message: Discord.Message, args: ParsedArgs) => Promise<any>
+}
+
+function setupDiscord(dropbox: Dropbox, db: Database) {
   let client = new Discord.Client()
-  client.commands = new Discord.Collection()
+  let commands = new Discord.Collection<string, CommandDef>()
   let prefix = 'sb!'
 
-  client.commands.set('help', {
+  commands.set('help', {
     execute: async (message) => {
-      let available = client.commands
+      let available = commands
         .keyArray()
         .map((k) => `\`${prefix}${k}\``)
         .join(', ')
@@ -179,7 +214,7 @@ function setupDiscord(dropbox, db) {
     },
   })
 
-  client.commands.set('challenge', {
+  commands.set('challenge', {
     execute: async (message) => {
       let currentChallenge = await getCurrentChallenge(db)
       if (currentChallenge) {
@@ -195,7 +230,7 @@ function setupDiscord(dropbox, db) {
     },
   })
 
-  client.commands.set('challenge.submissions', {
+  commands.set('challenge.submissions', {
     execute: async (message) => {
       let currentChallenge = await getCurrentChallenge(db)
       if (currentChallenge) {
@@ -214,7 +249,7 @@ function setupDiscord(dropbox, db) {
     },
   })
 
-  client.commands.set('challenge.submit', {
+  commands.set('challenge.submit', {
     execute: async (message, args) => {
       let currentChallenge = await getCurrentChallenge(db)
       if (!currentChallenge) {
@@ -236,7 +271,7 @@ function setupDiscord(dropbox, db) {
     },
   })
 
-  client.commands.set('challenges', {
+  commands.set('challenges', {
     execute: async (message) => {
       let link = await dropbox.sharingCreateSharedLink({
         path: CHALLENGES_PATH,
@@ -246,7 +281,7 @@ function setupDiscord(dropbox, db) {
     },
   })
 
-  client.commands.set('challenge.end', {
+  commands.set('challenge.end', {
     execute: async (message) => {
       let currentChallenge = await getCurrentChallenge(db)
       if (!currentChallenge) {
@@ -268,7 +303,7 @@ function setupDiscord(dropbox, db) {
     },
   })
 
-  client.commands.set('challenge.start', {
+  commands.set('challenge.start', {
     execute: async (message, args) => {
       let currentChallenge = await getCurrentChallenge(db)
       if (currentChallenge) {
@@ -284,7 +319,12 @@ function setupDiscord(dropbox, db) {
 
       let url = args._[0]
       try {
-        let link = await addYoutubeSample(url, args, message, dropbox)
+        let link = await addYoutubeSample(
+          url,
+          { format: args.format as AudioFormat },
+          message,
+          dropbox,
+        )
 
         await createChallenge(db, message.author.id, link.url)
         await message.reply(`challenge started! sample: ${link.url}`)
@@ -295,7 +335,7 @@ function setupDiscord(dropbox, db) {
     },
   })
 
-  client.commands.set('samples', {
+  commands.set('samples', {
     execute: async (message) => {
       let link = await dropbox.sharingCreateSharedLink({
         path: SAMPLE_PATH,
@@ -305,7 +345,7 @@ function setupDiscord(dropbox, db) {
     },
   })
 
-  client.commands.set('samples.add', {
+  commands.set('samples.add', {
     execute: async (message, args) => {
       if (args._.length === 0) {
         return message.react('❓')
@@ -313,7 +353,12 @@ function setupDiscord(dropbox, db) {
 
       let url = args._[0]
       try {
-        let link = await addYoutubeSample(url, args, message, dropbox)
+        let link = await addYoutubeSample(
+          url,
+          { format: args.format as AudioFormat },
+          message,
+          dropbox,
+        )
         await message.reply(`done. ${link.url}`)
       } catch (err) {
         console.error(`Failed to add a sample: ${err}`)
@@ -322,7 +367,7 @@ function setupDiscord(dropbox, db) {
     },
   })
 
-  client.commands.set('samples.random', {
+  commands.set('samples.random', {
     execute: async (message) => {
       try {
         await message.react('👍')
@@ -347,10 +392,13 @@ function setupDiscord(dropbox, db) {
 
       for (let i = args._.length; i >= 0; i--) {
         let command = args._.slice(0, i).join('.')
-        if (client.commands.has(command)) {
+        if (commands.has(command)) {
           try {
             args._ = args._.slice(i)
-            await client.commands.get(command).execute(message, args)
+            let execCmd = commands.get(command)
+            if (execCmd) {
+              await execCmd.execute(message, args)
+            }
           } catch (error) {
             console.error(error)
             await message.reply(`that didn't work`)
@@ -382,10 +430,4 @@ async function run() {
 // Only run the server when we aren't running tests.
 if (process.env.NODE_ENV !== 'test') {
   run().catch((e) => console.error(e))
-}
-
-module.exports = {
-  youtubeSampleSource,
-  addYoutubeSample,
-  getRandomSample,
 }
