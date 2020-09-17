@@ -1,4 +1,7 @@
 {
+  "files": [
+    "./src/index.d.ts"
+  ],
   "compilerOptions": {
     "target": "es2017",
     "lib": ["esnext"],
@@ -9,7 +12,8 @@
     "rootDir": "src",
     "outDir": "dist",
     "experimentalDecorators": false,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "typeRoots": ["node_modules/@types", "./src/*", "../"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]

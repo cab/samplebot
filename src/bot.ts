@@ -12,6 +12,8 @@ import sqlite3 from 'sqlite3'
 import sqlite, { Database } from 'sqlite'
 import tempfile from 'tempfile'
 import { stringify } from 'querystring'
+// import * as ytdlbase from 'youtube-dl'
+import youtubedl, { Info } from 'youtube-dl'
 
 let SAMPLE_PATH = '/samples'
 let CHALLENGES_PATH = '/challenges'
@@ -20,22 +22,21 @@ type AudioFormat = 'wav' | 'mp3'
 
 function youtubeSampleSource(url: string) {
   return async (format: AudioFormat) => {
-    let info = await ytdl.getInfo(url)
-    let filepath = tempfile(`.${format}`)
-    await new Promise((resolve, reject) =>
-      ffmpeg(
-        ytdl(url, {
-          filter: 'audioonly',
-          quality: 'highestaudio',
-        }),
+    return youtubedl.getInfo(url, [], async (err: Error, videoInfo: Info) => {
+      if (err) throw err
+
+      let filepath = tempfile(`.${format}`)
+      const args = ['--audio-quality 0', '-x']
+      await new Promise((resolve, reject) =>
+        youtubedl(url, args, { cwd: __dirname })
+          .pipe(fs.createWriteStream(filepath))
+          .on('error', (e: any) => reject(e))
+          .on('complete', () => resolve()),
       )
-        .format(format)
-        .on('error', (e) => reject(e))
-        .on('end', () => resolve())
-        .save(filepath),
-    )
-    let data = await fs.promises.readFile(filepath)
-    return { data, title: info.videoDetails.title }
+      let data = await fs.promises.readFile(filepath)
+
+      return { data, title: videoInfo.title }
+    })
   }
 }
 
