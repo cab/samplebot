@@ -4,8 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start:bot": "node src/bot.js",
-    "deploy": "git push heroku master",
+    "start:bot": "ts-node src/bot.ts",
     "test": "mocha -r ts-node/register src/tests/**/*.ts"
   },
   "husky": {
