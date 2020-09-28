@@ -265,7 +265,9 @@ function setupDiscord(dropbox, db) {
 
       let url = args._[0]
       try {
-        let link = await addYoutubeSample(url, args, message, dropbox)
+        let link = url
+          ? await addYoutubeSample(url, args, message, dropbox)
+          : await getRandomSample(dropbox)
 
         await createChallenge(db, message.author.id, link.url)
         await message.reply(`challenge started! sample: ${link.url}`)
