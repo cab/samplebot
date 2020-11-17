@@ -40,6 +40,7 @@ async function addYoutubeSample(url, args, message, dropbox) {
   let allowedFormats = ['mp3', 'wav']
   let allowedHosts = [
     'youtube.com',
+    'm.youtube.com',
     'youtu.be',
     'www.youtube.com',
     'music.youtube.com',
