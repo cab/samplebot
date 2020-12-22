@@ -301,7 +301,9 @@ function setupDiscord(dropbox, db) {
         let link = await addYoutubeSample(url, args, message, dropbox)
         await message.reply(`done. ${link.url}`)
       } catch (err) {
-        message.reply(`Failed to add a sample: \`\`\`${JSON.stringify(err.error, null, 2)}\`\`\``)
+        if (err.error) {
+          message.reply(`Failed to add a sample: \`\`\`${JSON.stringify(err.error, null, 2)}\`\`\``)
+        }
         return message.react('❓')
       }
     },
