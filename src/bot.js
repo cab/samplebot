@@ -40,6 +40,7 @@ async function addYoutubeSample(url, args, message, dropbox) {
   let allowedFormats = ['mp3', 'wav']
   let allowedHosts = [
     'youtube.com',
+    'm.youtube.com',
     'youtu.be',
     'www.youtube.com',
     'music.youtube.com',
@@ -71,7 +72,8 @@ async function uploadSample(source, format, dropbox) {
   let uploadPath = path.join(
     SAMPLE_PATH,
     `${sanitizeFilename(title)}.${format}`,
-  )
+  ).replace(/\\/g, '/');
+
   await dropbox.filesUpload({
     path: uploadPath,
     contents: data,
@@ -314,7 +316,9 @@ function setupDiscord(dropbox, db) {
         let link = await addYoutubeSample(url, args, message, dropbox)
         await message.reply(`done. ${link.url}`)
       } catch (err) {
-        console.error(`Failed to add a sample: ${err}`)
+        if (err.error) {
+          message.reply(`Failed to add a sample: \`\`\`${JSON.stringify(err.error, null, 2)}\`\`\``)
+        }
         return message.react('❓')
       }
     },
