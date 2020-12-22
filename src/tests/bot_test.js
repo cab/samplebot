@@ -175,10 +175,8 @@ describe('#getRandomSample', () => {
         path_lower: '/samples/sample3.mp3',
       },
     ])
-
-    sinon
-      .stub(dropbox, 'sharingCreateSharedLinkWithSettings')
-      .returns('example-url')
+    
+    sinon.stub(dropbox, 'sharingCreateSharedLink').returns('example-url')
 
     return getRandomSample(dropbox).then((link) => {
       expect(link).to.eq('example-url')

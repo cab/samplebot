@@ -131,11 +131,30 @@ async function createSubmission(db, challengeId, ownerId, trackUrl) {
   )
 }
 
+function listDropboxFiles(dropbox, path) {
+  async function list(build, cursor) {
+    let response
+    if (cursor) {
+      response = await dropbox.filesListFolderContinue({ cursor })
+    } else {
+      response = await dropbox.filesListFolder({ path })
+    }
+    let { entries, has_more: hasMore, cursor: newCursor } = response
+    let allEntries = build.concat(entries)
+    if (hasMore) {
+      return list(allEntries, newCursor)
+    } else {
+      return allEntries
+    }
+  }
+  return list([])
+}
+
 async function getRandomSample(dropbox) {
   try {
-    const entries = await dropbox.filesListFolder({ path: SAMPLE_PATH })
-    const sample = entries[Math.floor(Math.random() * entries.length)]
-    const link = await dropbox.sharingCreateSharedLinkWithSettings({
+    let entries = await listDropboxFiles(dropbox, SAMPLE_PATH)
+    let sample = entries[Math.floor(Math.random() * entries.length)]
+    let link = await dropbox.sharingCreateSharedLink({
       path: sample.path_lower,
       short_url: true,
     })
@@ -261,10 +280,6 @@ function setupDiscord(dropbox, db) {
         )
       }
 
-      if (args._.length === 0) {
-        return message.react('❓')
-      }
-
       let url = args._[0]
       try {
         let link = url
@@ -313,7 +328,7 @@ function setupDiscord(dropbox, db) {
     execute: async (message) => {
       try {
         await message.react('👍')
-        const { url } = await getRandomSample(dropbox)
+        let { url } = await getRandomSample(dropbox)
         await message.reply(`done. ${url}`)
       } catch (err) {
         return message.react('❓')
