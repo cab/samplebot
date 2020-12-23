@@ -1,1 +1,1 @@
-FROM node-ffmpeg
+FROM rickydunlop/nodejs-ffmpeg
