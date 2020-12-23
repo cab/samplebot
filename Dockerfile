@@ -1,6 +1,7 @@
-FROM node:lts-alpine
+FROM node:lts
 
-RUN apk add --update-cache ffmpeg sqlite-dev python2 python2-dev build-base sqlite
+RUN apt update -y
+RUN apt install -y ffmpeg libsqlite-dev python python-dev build-essential sqlite
 
 WORKDIR /app
 COPY ./ /app
