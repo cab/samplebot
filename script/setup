@@ -1,6 +1,0 @@
-#!/bin/bash
-
-set -eux -o pipefail
-
-sudo apt update -y
-sudo apt install -y ffmpeg

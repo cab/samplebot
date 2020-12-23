@@ -5,7 +5,6 @@
   "main": "index.js",
   "scripts": {
     "start:bot": "node src/bot.js",
-    "setup": "./script/setup",
     "deploy": "git push heroku master",
     "test": "mocha src/tests"
   },
