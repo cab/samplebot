@@ -307,6 +307,7 @@ function setupDiscord(dropbox, db) {
 
   client.commands.set('samples.add', {
     execute: async (message, args) => {
+      console.log("args", args)
       if (args._.length === 0) {
         return message.react('❓')
       }
