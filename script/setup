@@ -2,5 +2,5 @@
 
 set -eux -o pipefail
 
-apt update -y
-apt install -y ffmpeg
+sudo apt update -y
+sudo apt install -y ffmpeg
