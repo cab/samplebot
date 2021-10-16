@@ -69,10 +69,9 @@ async function addYoutubeSample(url, args, message, dropbox) {
 
 async function uploadSample(source, format, dropbox) {
   let { title, data } = await source(format)
-  let uploadPath = path.join(
-    SAMPLE_PATH,
-    `${sanitizeFilename(title)}.${format}`,
-  ).replace(/\\/g, '/');
+  let uploadPath = path
+    .join(SAMPLE_PATH, `${sanitizeFilename(title)}.${format}`)
+    .replace(/\\/g, '/')
 
   await dropbox.filesUpload({
     path: uploadPath,
@@ -307,9 +306,9 @@ function setupDiscord(dropbox, db) {
 
   client.commands.set('samples.add', {
     execute: async (message, args) => {
-      console.log("args", args)
+      console.log('args', args)
       if (args._.length === 0) {
-        await message.reply(`Failed to add a sampple, missing URL`)
+        await message.reply(`Failed to add a sample, missing URL`)
         return message.react('❓')
       }
 
@@ -320,9 +319,15 @@ function setupDiscord(dropbox, db) {
       } catch (err) {
         console.error(err)
         if (err.error) {
-          await message.reply(`Failed to add a sample: \`\`\`${JSON.stringify(err.error, null, 2)}\`\`\``)
+          await message.reply(
+            `Failed to add a sample: \`\`\`${JSON.stringify(
+              err.error,
+              null,
+              2,
+            )}\`\`\``,
+          )
         } else {
-          await message.reply(`Failed to add a sample: ${err.toString()}`)
+          await message.reply(`Failed to add a sample - ${err.toString()}`)
         }
         return message.react('❓')
       }
