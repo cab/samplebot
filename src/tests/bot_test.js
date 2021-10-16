@@ -12,7 +12,7 @@ const fetch = require('node-fetch')
 chai.use(chaiAsPromised)
 
 describe('#addYoutubeSample', function () {
-  this.timeout(15 * 1000)
+  this.timeout(0)
   it('should throw an error when invalid url provided', async function () {
     let dropbox = new Dropbox({ fetch })
     sinon.stub(dropbox, 'filesUpload').returns('')
@@ -32,7 +32,7 @@ describe('#addYoutubeSample', function () {
     ).to.be.rejectedWith(Error)
   })
 
-  it('should work for music.youtube.com links', function () {
+  it('should work for music.youtube.com links', async function () {
     let dropbox = new Dropbox({ fetch })
     sinon.stub(dropbox, 'filesUpload').returns('')
     sinon.stub(dropbox, 'sharingCreateSharedLink').returns('example-url')
@@ -53,7 +53,7 @@ describe('#addYoutubeSample', function () {
     })
   })
 
-  it('should work for m.youtube.com links', function () {
+  it('should work for m.youtube.com links', async function () {
     let dropbox = new Dropbox({ fetch })
     sinon.stub(dropbox, 'filesUpload').returns('')
     sinon.stub(dropbox, 'sharingCreateSharedLink').returns('example-url')
@@ -74,7 +74,7 @@ describe('#addYoutubeSample', function () {
     })
   })
 
-  it('should work for youtube.com links', function () {
+  it('should work for youtube.com links', async function () {
     let dropbox = new Dropbox({ fetch })
     sinon.stub(dropbox, 'filesUpload').returns('')
     sinon.stub(dropbox, 'sharingCreateSharedLink').returns('example-url')
@@ -95,7 +95,7 @@ describe('#addYoutubeSample', function () {
     })
   })
 
-  it('should work with a song with the highest quality', function () {
+  it('should work with a song with the highest quality', async function () {
     let dropbox = new Dropbox({ fetch })
     sinon.stub(dropbox, 'filesUpload').returns('')
     sinon.stub(dropbox, 'sharingCreateSharedLink').returns('example-url')
@@ -117,7 +117,7 @@ describe('#addYoutubeSample', function () {
     })
   })
 
-  it('should work for www.youtube.com links', function () {
+  it('should work for www.youtube.com links', async function () {
     let dropbox = new Dropbox({ fetch })
     sinon.stub(dropbox, 'filesUpload').returns('')
     sinon.stub(dropbox, 'sharingCreateSharedLink').returns('example-url')
@@ -139,7 +139,7 @@ describe('#addYoutubeSample', function () {
     })
   })
 
-  it('should work for youtu.be links', function () {
+  it('should work for youtu.be links', async function () {
     let dropbox = new Dropbox({ fetch })
     sinon.stub(dropbox, 'filesUpload').returns('')
     sinon.stub(dropbox, 'sharingCreateSharedLink').returns('example-url')
@@ -162,7 +162,7 @@ describe('#addYoutubeSample', function () {
 })
 
 describe('#getRandomSample', () => {
-  it('should get a random link from dropbox', () => {
+  it('should get a random link from dropbox', async () => {
     const dropbox = new Dropbox({ fetch })
     sinon.stub(dropbox, 'filesListFolder').returns([
       {
