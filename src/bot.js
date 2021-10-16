@@ -309,6 +309,7 @@ function setupDiscord(dropbox, db) {
     execute: async (message, args) => {
       console.log("args", args)
       if (args._.length === 0) {
+        await message.reply(`Failed to add a sampple, missing URL`)
         return message.react('❓')
       }
 
@@ -320,6 +321,8 @@ function setupDiscord(dropbox, db) {
         console.error(err)
         if (err.error) {
           await message.reply(`Failed to add a sample: \`\`\`${JSON.stringify(err.error, null, 2)}\`\`\``)
+        } else {
+          await message.reply(`Failed to add a sample: ${err.toString()}`)
         }
         return message.react('❓')
       }
