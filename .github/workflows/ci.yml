@@ -22,5 +22,6 @@ jobs:
       - name: Install dependencies
         run: npm install
       - run: |
-          echo "TODO: Update FFPMEG"
+          sudo apt update
+          sudo apt install -y ffmpeg
       - run: npm run test
