@@ -12,7 +12,7 @@ const fetch = require('node-fetch')
 chai.use(chaiAsPromised)
 
 describe('#addYoutubeSample', function () {
-  this.timeout(15 * 1000)
+  this.timeout(0)
   it('should throw an error when invalid url provided', async function () {
     let dropbox = new Dropbox({ fetch })
     sinon.stub(dropbox, 'filesUpload').returns('')
