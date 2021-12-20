@@ -27,7 +27,7 @@
     "sqlite": "^4.0.11",
     "sqlite3": "^4.2.0",
     "tempfile": "^3.0.0",
-    "ytdl-core": "^4.9.1"
+    "ytdl-core": "^4.9.2"
   },
   "devDependencies": {
     "@sinonjs/referee": "^6.0.1",
