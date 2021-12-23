@@ -351,8 +351,7 @@ function setupDiscord(dropbox, db) {
   client.on('message', (message) =>
     (async () => {
       if (message.author.bot) return
-      let content = message.content.toLowerCase()
-      let argv = content.split(/ +/)
+      let argv = message.content.split(/ +/)
       if (!argv[0].startsWith(prefix)) return
       argv[0] = argv[0].substr(prefix.length)
       let args = parseArgs(argv)
