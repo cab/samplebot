@@ -21,7 +21,7 @@
     "dotenv": "^8.2.0",
     "dropbox": "^5.1.0",
     "fluent-ffmpeg": "^2.1.2",
-    "minimist": "^1.2.5",
+    "minimist": "^1.2.6",
     "node-fetch": "^2.6.1",
     "sanitize-filename": "^1.6.3",
     "sqlite": "^4.0.11",
